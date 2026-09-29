@@ -1,0 +1,7 @@
+{
+    "experiment_id": "EXP_BASELINE_TEST",
+    "run_type": "BASELINE",
+    "config_hash": "9363c28350ea76c02538861f9b32b971b94fd03563142b918fc4fc703e2ef0df",
+    "cost_config_id": "INDIA_EQUITY_DELIVERY_2026_09",
+    "data_source": "mock_generator"
+}

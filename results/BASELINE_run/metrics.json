@@ -1,0 +1,7 @@
+{
+    "run_type": "BASELINE",
+    "result_layer": "PORTFOLIO_CAPACITY_CONSTRAINED",
+    "completed_trades": 0,
+    "final_equity": 1000000.0,
+    "config_hash": "9363c28350ea76c02538861f9b32b971b94fd03563142b918fc4fc703e2ef0df"
+}
