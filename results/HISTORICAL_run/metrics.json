@@ -1,0 +1,11 @@
+{
+    "run_type": "BASELINE",
+    "research_phase": "HISTORICAL",
+    "result_layer": "PORTFOLIO_CAPACITY_CONSTRAINED",
+    "universe": "CURRENT_ACTIVE_UNIVERSE",
+    "completed_trades": 244,
+    "win_rate": 0.5942622950819673,
+    "mean_r": 0.6788643343722575,
+    "final_equity": 2161119.2742248755,
+    "config_hash": "9363c28350ea76c02538861f9b32b971b94fd03563142b918fc4fc703e2ef0df"
+}
