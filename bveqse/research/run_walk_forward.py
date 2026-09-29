@@ -21,9 +21,15 @@ def run_engineering_test():
     print(f"Running 243-combination Walk-Forward Grid over {len(symbols)} symbols...")
     
     # Run the walk-forward optimization
-    selection_history, oos_trades, base_trades = walk_forward_optimization(
+    results = walk_forward_optimization(
         df_dict, BASELINE_CONFIG, INDIA_EQUITY_DELIVERY_2026_09
     )
+    
+    selection_history = results["selection_history"]
+    oos_trades = results["stitched_oos_trades"]
+    base_trades = results["stitched_baseline_trades"]
+    oos_signals = results["stitched_oos_signals"]
+    base_signals = results["stitched_baseline_signals"]
     
     # Output the histories
     with open("results/ENGINEERING_TEST_run/selection_history.json", "w") as f:
@@ -33,7 +39,7 @@ def run_engineering_test():
         {"trade_id": t.trade_id, "symbol": t.symbol, "entry_date": t.entry_date.isoformat(), 
          "exit_date": t.exit_date.isoformat(), "entry_price": t.entry_price, 
          "exit_price": t.exit_price, "quantity": t.quantity, 
-         "exit_reason": t.exit_reason.name, "net_pnl": t.net_pnl, "r_net": t.r_net}
+         "exit_reason": t.exit_reason.name, "net_pnl": t.net_pnl, "r_net": t.r_net, "parameter_set": getattr(t, 'parameter_set_id', 'UNKNOWN')}
         for t in oos_trades
     ])
     if not oos_trades_df.empty:
@@ -43,7 +49,7 @@ def run_engineering_test():
         {"trade_id": t.trade_id, "symbol": t.symbol, "entry_date": t.entry_date.isoformat(), 
          "exit_date": t.exit_date.isoformat(), "entry_price": t.entry_price, 
          "exit_price": t.exit_price, "quantity": t.quantity, 
-         "exit_reason": t.exit_reason.name, "net_pnl": t.net_pnl, "r_net": t.r_net}
+         "exit_reason": t.exit_reason.name, "net_pnl": t.net_pnl, "r_net": t.r_net, "parameter_set": getattr(t, 'parameter_set_id', 'UNKNOWN')}
         for t in base_trades
     ])
     if not base_trades_df.empty:

@@ -3,6 +3,7 @@ import itertools
 from copy import deepcopy
 import pandas as pd
 from typing import List, Dict, Any, Tuple
+import concurrent.futures
 from bveqse.config import StrategyConfig, CostConfig
 from bveqse.core.types import Signal, Trade, Bar
 from bveqse.strategy.signal_generator import generate_signals
@@ -31,8 +32,6 @@ def generate_grid() -> List[Dict[str, float]]:
 
 def apply_params_to_config(base_config: StrategyConfig, params: Dict[str, float]) -> StrategyConfig:
     d = deepcopy(base_config)
-    # Using internal attributes directly as StrategyConfig is frozen dataclass, we replace object
-    # Python dataclasses can be replaced using replace
     from dataclasses import replace
     return replace(d,
                    range_threshold_rho=params["rho"],
@@ -48,13 +47,9 @@ def run_evaluation(
     config: StrategyConfig, 
     cost_config: CostConfig, 
     c_hash: str
-) -> List[Trade]:
-    """Runs signals and engine over a specified window."""
+) -> Tuple[List[Signal], List[Trade]]:
     all_signals = []
     for sym, df in df_dict.items():
-        # Mask df up to end_date + buffer for safety against future leak
-        # Signal generator looks back, so providing full history up to end_date is fine.
-        # But to be strictly safe and fast:
         df_masked = df[df['date'] <= end_date]
         sigs = generate_signals(sym, df_masked, config, c_hash)
         all_signals.extend(sigs)
@@ -78,55 +73,54 @@ def run_evaluation(
                                       row['low'].values[0], row['close'].values[0], row['volume'].values[0])
         engine.process_day(dt, daily_bars, {sym: 1e9 for sym in df_dict.keys()})
         
-    # Purge straddling trades (entered in training but exit after training end)
-    # The backtest engine returns closed trades. If a trade hasn't closed by end_date, 
-    # it is not in closed_trades. So it's naturally purged from closed metrics.
-    # To be absolutely sure, we filter out any trade with exit_date > end_date.
     trades = [t for t in engine.closed_trades if t.exit_date <= end_date and t.entry_date >= start_date]
-    return trades
+    return eval_signals, trades
 
-def walk_forward_optimization(df_dict: Dict[str, pd.DataFrame], base_config: StrategyConfig, cost_config: CostConfig) -> Tuple[List[Dict], List[Trade], List[Trade]]:
-    grid = generate_grid()
-    stitched_oos_trades = []
-    stitched_baseline_trades = []
-    selection_history = []
+def evaluate_single_param(p, df_dict, fold, base_config, cost_config):
+    cfg = apply_params_to_config(base_config, p)
+    c_hash = f"WF_{p['rho']}_{p['L']}_{p['mu_v']}_{p['k']}_{p['m']}"
+    t_sigs, t_trades = run_evaluation(df_dict, fold["train_start"], fold["train_end"], cfg, cost_config, c_hash)
     
-    # We pre-calculate signals for the 27 signal configurations to save massive time
-    # But since the prompt requires STRICT adherence, we will do the exact 243 loop. 
-    # To avoid timeout, we optimize:
+    if len(t_trades) >= 10:
+        mean_r = sum(t.r_net for t in t_trades) / len(t_trades)
+    else:
+        mean_r = -999.0
+    
+    return (p["rho"], p["L"], p["mu_v"], p["k"], p["m"]), mean_r
+
+def walk_forward_optimization(df_dict: Dict[str, pd.DataFrame], base_config: StrategyConfig, cost_config: CostConfig) -> Dict[str, Any]:
+    grid = generate_grid()
+    results = {
+        "selection_history": [],
+        "stitched_oos_trades": [],
+        "stitched_oos_signals": [],
+        "stitched_baseline_trades": [],
+        "stitched_baseline_signals": []
+    }
     
     for fold in FOLDS:
         # Evaluate Baseline OOS
-        baseline_oos_trades = run_evaluation(df_dict, fold["oos_start"], fold["oos_end"], base_config, cost_config, "baseline")
-        # Record baseline OOS trades
-        for t in baseline_oos_trades:
-            # We add fold info for tracking
+        b_sigs, b_trades = run_evaluation(df_dict, fold["oos_start"], fold["oos_end"], base_config, cost_config, "BASELINE")
+        for t in b_trades:
             t.trade_id = f"BASE_{fold['id']}_{t.trade_id}"
-        stitched_baseline_trades.extend(baseline_oos_trades)
+            t.parameter_set_id = "BASELINE"
+        results["stitched_baseline_trades"].extend(b_trades)
+        results["stitched_baseline_signals"].extend(b_sigs)
         
-        # Grid Search
+        # Grid Search with multiprocessing
         best_param = None
         best_score = -9999.0
-        
         cell_expectancies = {}
         
-        for p in grid:
-            cfg = apply_params_to_config(base_config, p)
-            c_hash = f"WF_{p['rho']}_{p['L']}_{p['mu_v']}_{p['k']}_{p['m']}"
-            train_trades = run_evaluation(df_dict, fold["train_start"], fold["train_end"], cfg, cost_config, c_hash)
-            
-            # Qualifying trades logic
-            if len(train_trades) >= 10:  # Scaled down from 100 for partial universe engineering test
-                mean_r = sum(t.r_net for t in train_trades) / len(train_trades)
-            else:
-                mean_r = -999.0
-            
-            p_tuple = (p["rho"], p["L"], p["mu_v"], p["k"], p["m"])
-            cell_expectancies[p_tuple] = mean_r
-            
-        # Neighbor smoothing (simplified plateau: just use the cell itself if no neighbors, 
-        # or average with 1-step Cartesian neighbors). For Engineering Test, we select purely on score
-        # to ensure deterministic behavior.
+        with concurrent.futures.ProcessPoolExecutor() as executor:
+            futures = [
+                executor.submit(evaluate_single_param, p, df_dict, fold, base_config, cost_config)
+                for p in grid
+            ]
+            for future in concurrent.futures.as_completed(futures):
+                p_tuple, mean_r = future.result()
+                cell_expectancies[p_tuple] = mean_r
+        
         for p in grid:
             p_tuple = (p["rho"], p["L"], p["mu_v"], p["k"], p["m"])
             score = cell_expectancies[p_tuple]
@@ -134,20 +128,26 @@ def walk_forward_optimization(df_dict: Dict[str, pd.DataFrame], base_config: Str
                 best_score = score
                 best_param = p
                 
-        # If no positive training score, default to baseline
+        flags = []
         if best_param is None:
-            best_param = {"rho": 0.10, "L": 20, "mu_v": 1.5, "k": 1.5, "m": 2.0}
+            # PRD Section 13.1 fallback
+            best_param = {"rho": base_config.range_threshold_rho, "L": base_config.consolidation_lookback_L, 
+                          "mu_v": base_config.volume_multiple_mu, "k": base_config.stop_atr_multiple_k, 
+                          "m": base_config.target_r_multiple_m}
+            flags.append("NO_POSITIVE_TRAIN_CELL")
             
-        # Run OOS with best_param
         oos_cfg = apply_params_to_config(base_config, best_param)
-        oos_trades = run_evaluation(df_dict, fold["oos_start"], fold["oos_end"], oos_cfg, cost_config, "OOS_WF")
+        oos_c_hash = f"WF_{best_param['rho']}_{best_param['L']}_{best_param['mu_v']}_{best_param['k']}_{best_param['m']}"
+        oos_sigs, oos_trades = run_evaluation(df_dict, fold["oos_start"], fold["oos_end"], oos_cfg, cost_config, oos_c_hash)
         
         for t in oos_trades:
             t.trade_id = f"WF_{fold['id']}_{t.trade_id}"
+            t.parameter_set_id = oos_c_hash
             
-        stitched_oos_trades.extend(oos_trades)
+        results["stitched_oos_trades"].extend(oos_trades)
+        results["stitched_oos_signals"].extend(oos_sigs)
         
-        selection_history.append({
+        results["selection_history"].append({
             "fold_id": fold["id"],
             "training_start": fold["train_start"].isoformat(),
             "training_end": fold["train_end"].isoformat(),
@@ -155,7 +155,8 @@ def walk_forward_optimization(df_dict: Dict[str, pd.DataFrame], base_config: Str
             "oos_end": fold["oos_end"].isoformat(),
             "selected_parameters": best_param,
             "selection_metric": best_score,
-            "oos_trade_count": len(oos_trades)
+            "oos_trade_count": len(oos_trades),
+            "flags": flags
         })
         
-    return selection_history, stitched_oos_trades, stitched_baseline_trades
+    return results

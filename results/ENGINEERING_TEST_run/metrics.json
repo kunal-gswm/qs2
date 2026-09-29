@@ -1,0 +1,6 @@
+{
+    "run_type": "ENGINEERING_TEST",
+    "universe_status": "PARTIAL_UNIVERSE",
+    "stitched_oos_trades": 9,
+    "baseline_oos_trades": 7
+}
