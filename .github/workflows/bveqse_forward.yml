@@ -1,0 +1,39 @@
+name: BVEQSE Forward Observation
+
+on:
+  schedule:
+    # Run daily at 16:30 IST (11:00 UTC) after Indian markets close
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+jobs:
+  run-forward-observation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run Forward Engine
+        run: |
+          # Fetch today's date
+          TODAY=$(date +%Y-%m-%d)
+          python -m bveqse.forward.engine $TODAY
+          python -m bveqse.forward.reporting
+
+      - name: Archive artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: forward-state
+          path: |
+            bveqse_forward.db
+            results/forward_*.json
+            results/forward_*.csv
