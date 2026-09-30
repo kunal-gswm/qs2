@@ -1,0 +1,87 @@
+[
+    {
+        "fold_id": 1,
+        "training_start": "2018-01-01",
+        "training_end": "2020-12-31",
+        "oos_start": "2021-01-01",
+        "oos_end": "2021-12-31",
+        "selected_parameters": {
+            "rho": 0.1,
+            "L": 30,
+            "mu_v": 2.0,
+            "k": 1.75,
+            "m": 2.0
+        },
+        "selection_metric": 1.292469459222225,
+        "oos_trade_count": 18,
+        "flags": []
+    },
+    {
+        "fold_id": 2,
+        "training_start": "2018-01-01",
+        "training_end": "2021-12-31",
+        "oos_start": "2022-01-01",
+        "oos_end": "2022-12-31",
+        "selected_parameters": {
+            "rho": 0.075,
+            "L": 30,
+            "mu_v": 2.0,
+            "k": 1.75,
+            "m": 2.0
+        },
+        "selection_metric": 1.6710225273359551,
+        "oos_trade_count": 2,
+        "flags": []
+    },
+    {
+        "fold_id": 3,
+        "training_start": "2018-01-01",
+        "training_end": "2022-12-31",
+        "oos_start": "2023-01-01",
+        "oos_end": "2023-12-31",
+        "selected_parameters": {
+            "rho": 0.075,
+            "L": 30,
+            "mu_v": 2.0,
+            "k": 1.75,
+            "m": 2.0
+        },
+        "selection_metric": 1.4934227745404425,
+        "oos_trade_count": 15,
+        "flags": []
+    },
+    {
+        "fold_id": 4,
+        "training_start": "2018-01-01",
+        "training_end": "2023-12-31",
+        "oos_start": "2024-01-01",
+        "oos_end": "2024-12-31",
+        "selected_parameters": {
+            "rho": 0.075,
+            "L": 15,
+            "mu_v": 2.0,
+            "k": 1.25,
+            "m": 3.0
+        },
+        "selection_metric": 1.3023930753666837,
+        "oos_trade_count": 21,
+        "flags": []
+    },
+    {
+        "fold_id": 5,
+        "training_start": "2018-01-01",
+        "training_end": "2024-12-31",
+        "oos_start": "2025-01-01",
+        "oos_end": "2025-12-31",
+        "selected_parameters": {
+            "rho": 0.075,
+            "L": 15,
+            "mu_v": 2.0,
+            "k": 1.25,
+            "m": 3.0
+        },
+        "selection_metric": 1.3320909748652794,
+        "oos_trade_count": 35,
+        "flags": []
+    }
+]

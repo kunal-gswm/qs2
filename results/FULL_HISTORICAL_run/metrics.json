@@ -1,0 +1,13 @@
+{
+    "run_type": "FULL_HISTORICAL_RESEARCH",
+    "universe_status": "PARTIAL_UNIVERSE",
+    "stitched_oos_trades": 91,
+    "baseline_oos_trades": 339,
+    "stitched_oos_signals": 107,
+    "baseline_oos_signals": 469,
+    "reproducibility": {
+        "run1_hash": "84c9c8660505c2a0bf12df3fd8607d00cda96177c455efdc72b07dcb35fd886e",
+        "run2_hash": "84c9c8660505c2a0bf12df3fd8607d00cda96177c455efdc72b07dcb35fd886e",
+        "is_identical": true
+    }
+}
