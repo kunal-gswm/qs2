@@ -1,0 +1,2 @@
+simulation_type,n_simulations,seed,observed_mean_r,p_value,N1_PASS,N2_PASS
+Sign-Flipping Zero-Mean Test,10000,42,1.0422792304564994,0.0,True,True
