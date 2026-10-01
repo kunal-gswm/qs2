@@ -46,7 +46,14 @@ def run_forward_session(session_date: datetime.date, state: ForwardState):
 
     # 4. Generate Signals (on data up to session_date)
     # Signal generation only looks at closing data of session_date and before.
-    new_signals = generate_signals(df_dict, session_date, cfg)
+    new_signals = []
+    for sym, df in df_dict.items():
+        sym_sigs = generate_signals(sym, df, cfg, expected_hash)
+        # Filter to only the exact session date (ignoring past signals)
+        for s in sym_sigs:
+            if s.signal_date == session_date:
+                new_signals.append(s)
+                
     if new_signals:
         engine.queue_signals(new_signals)
         
