@@ -1,0 +1,35 @@
+{
+    "experiment": "FIXED_5Y_DIAGNOSTIC",
+    "run_id": "62ca2c78-c065-43a1-8159-d30f23e291fc",
+    "config_hash": "8710891f0eca870be867818a55f434eec06710e4a4337c4b1defe3ae06a5f7b2",
+    "universe_hash": "bc9570f860cae301a1fdb272abb019be7afe160b6f4034e0fc88188ef34bb951",
+    "overall_1x": {
+        "completed_trades": 165,
+        "win_rate": 0.593939393939394,
+        "mean_r": 1.0419639110470311,
+        "median_r": 2.647647812342753,
+        "profit_factor": 2.9808166104553573,
+        "gross_pnl": 24681.467859924833,
+        "net_pnl": 19931.887936037154,
+        "costs": 4749.579923887674
+    },
+    "overall_2x": {
+        "completed_trades": 159,
+        "win_rate": 0.5786163522012578,
+        "mean_r": 0.6017608589552252,
+        "median_r": 2.182992000627349,
+        "profit_factor": 2.0125813640650096,
+        "gross_pnl": 19498.774292457474,
+        "net_pnl": 10842.622655127303,
+        "costs": 8656.151637330175
+    },
+    "monte_carlo": {
+        "95th_percentile_max_dd": 14.707196264587294,
+        "terminal_loss_probability": 0.0
+    },
+    "concentration": {
+        "largest_single_symbol": 0.08447654417022527,
+        "top_5_trades": 0.12596837859726032,
+        "largest_single_trade": 0.026541254453151593
+    }
+}
